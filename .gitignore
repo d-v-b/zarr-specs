@@ -6,3 +6,6 @@ docs/_build
 
 # pycharm
 .idea
+
+# visual studio code
+.vscode
