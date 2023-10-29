@@ -5,6 +5,8 @@
  Zarr core specification (version 3.0)
 ======================================
 
+  **Editor's draft 25 May 2022**
+
 Specification URI:
     https://zarr-specs.readthedocs.io/en/latest/v3/core/v3.0.html
 
@@ -14,7 +16,7 @@ Editors:
     * Jeremy Maitin-Shepard (`@jbms <https://github.com/jbms>`_), Google
 
 Corresponding ZEP:
-    `ZEP0001 — Zarr specification version 3 <https://zarr.dev/zeps/accepted/ZEP0001.html>`_
+    `ZEP 1 — Zarr specification version 3 <https://zarr.dev/zeps/draft/ZEP0001.html>`_
 
 Issue tracking:
     `GitHub issues <https://github.com/zarr-developers/zarr-specs/labels/core-protocol-v3.0>`_
@@ -22,7 +24,11 @@ Issue tracking:
 Suggest an edit for this spec:
     `GitHub editor <https://github.com/zarr-developers/zarr-specs/blob/main/docs/v3/core/v3.0.rst>`_
 
-Copyright 2019-Present Zarr core development team. This work
+Suggest extensions or other changes as a Zarr Enhancement Proposal (ZEP):
+    `ZEP 0 — Purpose and process <https://zarr.dev/zeps/active/ZEP0000.html>`_
+
+Copyright 2019-Present `Zarr core development team
+<https://github.com/orgs/zarr-developers/teams/core-devs>`_. This work
 is licensed under a `Creative Commons Attribution 3.0 Unported License
 <https://creativecommons.org/licenses/by/3.0/>`_.
 
@@ -38,7 +44,10 @@ This specification defines the Zarr format for N-dimensional typed arrays.
 Status of this document
 =======================
 
-ZEP0001 was accepted on May 15th, 2023 via https://github.com/zarr-developers/zarr-specs/issues/227.
+.. warning::
+    This document is a draft for review and subject to changes.
+    It will become final when the `Zarr Enhancement Proposal (ZEP) 1 <https://zarr.dev/zeps/draft/ZEP0001.html>`_
+    is approved via the `ZEP process <https://zarr.dev/zeps/active/ZEP0000.html>`_.
 
 
 Introduction
@@ -59,10 +68,10 @@ specification version 2
 <https://zarr.readthedocs.io/en/stable/spec/v2.html>`_ (Zarr v2). The
 Zarr v2 specification is implemented in several programming
 languages and is used to store and analyse large
-scientific datasets from a variety of domains. However, it has become
-clear that there are several opportunities for modest but useful
-improvements to be made in the format, and for establishing a foundation
-that allows for greater interoperability, whilst also enabling a variety
+scientific datasets from a variety of domains. However, it has become 
+clear that there are several opportunities for modest but useful 
+improvements to be made in the format, and for establishing a foundation 
+that allows for greater interoperability, whilst also enabling a variety 
 of more advanced and specialised features to be explored and developed.
 
 This specification also draws heavily on the `N5 API and
@@ -116,12 +125,12 @@ This core specification adheres to a ``MAJOR.MINOR`` version
 number format. When incrementing the minor version, only additional features
 can be added. Breaking changes require incrementing the major version.
 
-A zarr implementation that provides the read and write API by
+A Zarr implementation that provides the read and write API by
 implementing a specification ``X.Y`` can be considered compatible with all
 datasets which only use features contained in version ``X.Y``.
 
 For example, spec ``X.1`` adds core feature "foo" compared to ``X.0``. Assuming
-implementation A implements ``X.1`` and implementation B implements ``X.0``.
+implementation A implements ``X.0`` and implementation B implements ``X.1``.
 Data using feature "foo" can only be read with implementation A. B fails to open
 it, as the key "foo" is unknown.
 
@@ -260,10 +269,12 @@ The following figure illustrates the first part of the terminology:
 *Data type*
 
     A data type defines the set of possible values that an array_ may
-    contain. For example, the 32-bit signed integer data type defines binary
-    representations for all integers in the range −2,147,483,648 to
-    2,147,483,647. This specification only defines a limited set of data types,
-    but extensions may define other data types.
+    contain, and a default binary representation (i.e., sequence of bytes) for
+    each possible value. For example, the 32-bit signed
+    integer data type defines binary representations for all integers
+    in the range −2,147,483,648 to 2,147,483,647. This specification
+    only defines a limited set of data types, but extensions
+    may define other data types.
 
 .. _chunk:
 .. _chunks:
@@ -321,7 +332,7 @@ The following figure illustrates the first part of the terminology:
     hierarchy_ are held in a store as raw bytes. To enable a variety
     of different store types to be used, this specification defines an
     `Abstract store interface`_ which is a common set of operations that stores
-    may provide. For example, a directory in a file system can be a zarr store,
+    may provide. For example, a directory in a file system can be a Zarr store,
     where keys are file names, values are file contents, and files can be read,
     written, listed or deleted via the operating system. Equally, an S3 bucket
     can provide this interface, where keys are resource names, values are
@@ -336,9 +347,9 @@ The following figure illustrates the first part of the terminology:
     storage transformers may intercept and alter the storage keys and bytes
     of an array_ before they reach the underlying physical storage.
     Upon retrieval, the original keys and bytes are restored within the
-    transformer. Any number of storage transformers can be registered and
-    stacked. In contrast to codecs, storage transformers can act on the
-    complete array, rather than individual chunks. See the
+    transformer. Any number of `predefined storage transformers`_ can be
+    registered and stacked. In contrast to codecs, storage transformers can
+    act on the a complete array, rather than individual chunks. See the
     `storage transformers details`_ below.
 
 .. _`storage transformers details`: #storage-transformers-1
@@ -412,7 +423,7 @@ underlying store_:
 
 .. note::
 
-   When storing a Zarr hierarchy in a filesystem-like store (e.g. the local
+   When storing a Zarr hierachy in a filesystem-like store (e.g. the local
    filesystem or S3) as a sub-directory, it is recommended that the
    sub-directory name ends with ``.zarr`` to indicate the start of a hierarchy
    to users.
@@ -476,11 +487,25 @@ mandatory names:
 
     The ``data_type`` value is an extension point and may be defined by a data
     type extension. If the data type is defined by an extension, then the value
-    may be either a plain string or an object containing the members ``name``
-    and optionally ``configuration``.  A plain string is equivalent to
-    specifying an object with just a ``name`` member.  The ``name`` is required
-    and its value must refer to a v3 data type specification. ``configuration``
-    is optional and its value is defined by the extension.
+    must be an object containing the names ``name`` and optionally
+    ``configuration`` and ``fallback``. The ``name`` is required and its value
+    must refer to a v3 data type specification. ``configuration`` is optional
+    and its value is defined by the extension. The ``fallback`` is optional and,
+    if provided, its value must be one or a list of the data type identifiers
+    defined in this specification or an extension. Fallback extension datatypes
+    are specified as an object with ``name`` and (optionally) ``configuration``.
+
+    If an implementation does not recognise the extension or specific data type,
+    but a ``fallback`` is present, then the implementation may proceed using the
+    first known ``fallback`` value as the data type. For fixed-sized data types,
+    if there is no more specific fallback available, a raw number of bytes using
+    the raw type (``r*``) should be given.
+
+    The default list of fallbacks to put into the metadata should be defined by
+    the data type extension, but it may be overridden by the user. *Note for
+    implementations*: Silently using a fallback without explicit approval might
+    cause problems for users, please consider options to (de-)activate fallback
+    behavior and/or appropriate warnings.
 
 ``chunk_grid``
 ^^^^^^^^^^^^^^
@@ -526,7 +551,7 @@ mandatory names:
       - the ``separator`` character, followed by,
 
       - the ASCII decimal string representation of the chunk index within that dimension.
-
+   
       For example, in a 3 dimensional array, with a separator of ``/`` the identifier
       for the chunk at grid index (1, 23, 45) is the string ``"c/1/23/45"``.  With a
       separator of ``.``, the identifier is the string ``"c.1.23.45"``.
@@ -538,6 +563,10 @@ mandatory names:
       .. note:: Arrays may have 0 dimensions (when for example representing scalars),
          in which case the coordinate of a chunk is the empty tuple, and the chunk key
          will consist of the string ``c``.
+      
+      .. note:: The prefix ``c`` exists to separate chunk keys from the keys for metadata 
+         documents. This is a performance optimization that allows applications to find 
+         Zarr metadata documents without traversing a potentially large number of chunk keys.
 
     - ``v2``
 
@@ -572,74 +601,30 @@ mandatory names:
     Provides an element value to use for uninitialised portions of the
     Zarr array.
 
-    The permitted values depend on the data type:
+    If the data type of the Zarr array is Boolean then the value must
+    be the literal ``false`` or ``true``. If the data type is one of
+    the integer data types defined in this specification, then the
+    value must be a number with no fraction or exponent part and must
+    be within the range of the data type.
 
-    ``bool``
-      The value must be a JSON boolean (``false`` or ``true``).
+    For any data type, the ``fill_value`` is required. The literal
+    ``null`` is not permitted. The fill value needs to be defined
+    so that the data is independent of implementation details. Internally
+    implementations may provide a default ``fill_value``, but that must
+    be converted to a fixed value in the stored metadata.
 
-    Integers (``{uint,int}{8,16,32,64}``)
-      The value must be a JSON number with no fraction or exponent part that is
-      within the representable range of the data type.
+    If the ``data_type`` of an array is defined in a ``data_type`` extension,
+    then said extension is responsible for interpreting the value of
+    ``fill_value`` and return a suitable type that can be used.
 
-    IEEE 754 floating point numbers (``float{16,32,64}``)
-      The value may be either:
+    For core data types for which fill values are not permitted in JSON or
+    for which decimal representation could be lossy, a string representing of
+    the binary (starting with ``0b``) or hexadecimal value (starting with
+    ``0x``) is accepted. This string must include all leading or trailing
+    zeroes necessary to match the given type size. The string values ``"NaN"``,
+    ``"+Infinity"`` and ``"-Infinity"`` are also understood for floating point
+    data types.
 
-      - A JSON number, that will be rounded to the nearest representable value.
-
-      - A JSON string of the form:
-
-        - ``"Infinity"``, denoting positive infinity;
-        - ``"-Infinity"``, denoting negative infinity;
-        - ``"NaN"``, denoting thenot-a-number (NaN) value where the sign bit is
-          0 (positive), the most significant bit (MSB) of the mantissa is 1, and
-          all other bits of the mantissa are zero;
-        - ``"0xYYYYYYYY"``, specifying the byte representation of the floating
-          point number as an unsigned integer.  For example, for ``float32``,
-          ``"NaN"`` is equivalent to ``"0x7fc00000"``.  This representation is
-          the only way to specify a NaN value other than the specific NaN value
-          denoted by ``"NaN"``.
-
-        .. warning::
-
-           While this NaN syntax is consistent with the syntax accepted by the
-           C99 ``strtod`` function, C99 leaves the meaning of the NaN payload
-           string implementation defined, which may not match the Zarr
-           definition.
-
-    Complex numbers (``complex{64,128}``)
-      The value must be a two-element array, specifying the real and imaginary
-      components respectively, where each component is specified as defined
-      above for floating point number.
-
-      For example, ``[1, 2]`` indicates ``1 + 2i`` and ``["-Infinity", "NaN"]``
-      indicates a complex number with real component of -inf and imaginary
-      component of NaN.
-
-    Raw data types (``r<N>``)
-      An array of integers, with length equal to ``<N>``, where each integer is
-      in the range ``[0, 255]``.
-
-    Extensions to the spec that define new data types must also define the JSON
-    fill value representation.
-
-    .. note::
-
-       The ``fill_value`` metadata field is required, but Zarr implementations
-       may provide an interface for creating a new array with which users can
-       leave the fill value unspecified, in which case a default fill value for
-       the data type will be chosen.  However, the default fill value that is
-       chosen MUST be recorded in the metadata.
-
-``codecs``
-^^^^^^^^^^
-
-    Specifies a list of codecs to be used for encoding and decoding chunks. The
-    value must be an array of objects, each object containing a member with
-    ``name`` whose value is a string referring to a v3 codec specification. The
-    codec object may also contain a ``configuration`` object which consists of
-    the parameter names and values as defined by the corresponding codec
-    specification.  Since an ``array -> bytes`` codec must be specified, the
-    list cannot be empty.
 
 The following members are optional:
 
@@ -659,8 +644,19 @@ The following members are optional:
     A proposal to specify metadata conventions (ZEP 4) is being discussed in
     https://github.com/zarr-developers/zeps/pull/28.
 
-``storage_transformers``
-^^^^^^^^^^^^^^^^^^^^^^^^
+``codecs``
+^^^^^^^^^^
+
+    Specifies a list of codecs to be used for encoding and decoding chunks. The
+    value must be an array of objects, each object containing a member with
+    ``name`` whose value is a string referring to a v3 codec specification. The
+    codec object may also contain a ``configuration`` object which consists of
+    the parameter names and values as defined by the corresponding codec
+    specification. An absent ``codecs`` member is equivalent to specifying an
+    empty list of codecs.
+
+``storage_transformers`` (array)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     Specifies a stack of `storage transformers`_. Each value in the list must be
     an object containing the names ``name`` and optionally ``configuration``.
@@ -678,18 +674,18 @@ The following members are optional:
     unnamed dimension is indicated by the null object.  If ``dimension_names`` is
     not specified, all dimensions are unnamed.
 
-    For compatibility with zarr implementations and applications that support
+    For compatibility with Zarr implementations and applications that support
     using dimension names to uniquely identify dimensions, it is recommended but
     not required that all non-null dimension names are distinct (no two
     dimensions have the same non-empty name).
 
     This specification also does not place any restrictions on the use of the
-    same dimension name across multiple arrays within the same zarr hierarchy,
+    same dimension name across multiple arrays within the same Zarr hierarchy,
     but extensions or specific applications may do so.
 
 The array metadata object must not contain any other names.
 Those are reserved for future versions of this specification.
-An implementation must fail to open zarr hierarchies, groups
+An implementation must fail to open Zarr hierarchies, groups
 or arrays with unknown metadata fields, with the exception of
 objects with a ``"must_understand": false`` key-value pair.
 
@@ -726,6 +722,7 @@ compressed using gzip compression prior to storage::
             }
         }],
         "fill_value": "NaN",
+        "extensions": [],
         "attributes": {
             "foo": 42,
             "bar": "apples",
@@ -744,7 +741,8 @@ above, but using a (currently made up) extension data type::
             "name": "datetime",
             "configuration": {
                 "unit": "ns"
-            }
+            },
+            "fallback": "int64"
         },
         "chunk_grid": {
             "name": "regular",
@@ -769,7 +767,7 @@ above, but using a (currently made up) extension data type::
 
 .. note::
 
-   Comparison with zarr spec v2:
+   Comparison with Zarr spec v2:
 
    - ``dtype`` has been renamed to ``data_type``,
    - ``chunks`` has been replaced with ``chunk_grid``,
@@ -818,7 +816,7 @@ For example, the JSON document below defines an explicit group::
 
 The group metadata object must not contain any other names. Those are reserved
 for future versions of this specification. An implementation must fail to open
-zarr hierarchies or groups with unknown metadata fields, with the exception of
+Zarr hierarchies or groups with unknown metadata fields, with the exception of
 objects with a ``"must_understand": false`` key-value pair.
 
 .. note::
@@ -839,7 +837,7 @@ apply to node names:
 * must not be a string composed only of period characters, e.g. ``"."`` or ``".."``
 * must not start with the reserved prefix ``"__"``
 
-To ensure consistent behaviour across different storage systems and programming
+To ensure consistent behavior across different storage systems and programming
 languages, we recommend users to only use characters in the sets ``a-z``,
 ``A-Z``, ``0-9``, ``-``, ``_``, ``.``.
 
@@ -873,7 +871,7 @@ This follows the
     representation is the ``UTF-8`` encoded Unicode string.
 
 .. note::
-    The prefix ``__zarr`` is reserved for core zarr data, and extensions
+    The prefix ``__zarr`` is reserved for core Zarr data, and extensions
     can use other files and folders starting with ``__``.
 
 
@@ -910,36 +908,52 @@ Core data types
 
    * - Identifier
      - Numerical type
+     - Default binary representation
    * - ``bool``
      - Boolean
+     - Single byte, with false encoded as ``\\x00`` and true encoded as ``\\x01``.
    * - ``int8``
      - Integer in ``[-2^7, 2^7-1]``
+     - 1 byte two's complement
    * - ``int16``
      - Integer in ``[-2^15, 2^15-1]``
+     - 2-byte little endian two's complement
    * - ``int32``
      - Integer in ``[-2^31, 2^31-1]``
+     - 4-byte little endian two's complement
    * - ``int64``
      - Integer in ``[-2^63, 2^63-1]``
+     - 8-byte little endian two's complement
    * - ``uint8``
      - Integer in ``[0, 2^8-1]``
+     - 1 byte
    * - ``uint16``
      - Integer in ``[0, 2^16-1]``
+     - 2-byte little endian
    * - ``uint32``
      - Integer in ``[0, 2^32-1]``
+     - 4-byte little endian
    * - ``uint64``
      - Integer in ``[0, 2^64-1]``
+     - 8-byte little endian
    * - ``float16`` (optionally supported)
      - IEEE 754 half-precision floating point: sign bit, 5 bits exponent, 10 bits mantissa
+     - 2-byte little endian IEEE 754 binary16
    * - ``float32``
      - IEEE 754 single-precision floating point: sign bit, 8 bits exponent, 23 bits mantissa
+     - 4-byte little endian IEEE 754 binary32
    * - ``float64``
      - IEEE 754 double-precision floating point: sign bit, 11 bits exponent, 52 bits mantissa
+     - 8-byte little endian IEEE 754 binary64
    * - ``complex64``
      - real and complex components are each IEEE 754 single-precision floating point
+     - 2 consecutive 4-byte little endian IEEE 754 binary32 values
    * - ``complex128``
      - real and complex components are each IEEE 754 double-precision floating point
+     - 2 consecutive 8-byte little endian IEEE 754 binary64 values
    * - ``r*`` (Optional)
-     - raw bits, variable size given by ``*``, limited to be a multiple of 8
+     - raw bits,  use for extension type fallbacks
+     - variable, given by ``*``, is limited to be a multiple of 8.
 
 Additionally to these base types, an implementation should also handle the
 raw/opaque pass-through type designated by the lower-case letter ``r`` followed
@@ -948,6 +962,11 @@ should be understood as fall-back types of respectively 1, 2, and 3 byte length.
 
 Zarr v3 is limited to type sizes that are a multiple of 8 bits but may support
 other type sizes in later versions of this specification.
+
+.. note::
+
+   While the default binary representation is little endian, the :ref:`endian
+   codec<endian-codec-v1>` may be specified to use big endian encoding instead.
 
 .. note::
 
@@ -1064,7 +1083,7 @@ the chain of codecs_ specified by the ``codecs`` metadata field.
 Codecs
 ------
 
-An array_ has an associated list of *codecs*.  Each codec specifies a
+An array_ may be associated with a list of *codecs*.  Each codec specifies a
 bidirectional transform (an *encode* transform and a *decode* transform).
 
 Each codec has an *encoded representation* and a *decoded representation*;
@@ -1072,31 +1091,6 @@ each of these two representations are defined to be either:
 
 - a multi-dimensional array of some shape and data type, or
 - a byte string.
-
-Based on the input and output representations for the encode transform,
-codecs can be classified as one of three kinds:
-
-- ``array -> array``
-- ``array -> bytes``
-- ``bytes -> bytes``
-
-.. note::
-
-   ``bytes -> array`` codecs, where after encoding an array as a byte
-   string, it is subsequently transformed back into an array, to then later
-   be transformed back into a byte string, are not currently allowed, due to
-   the lack of a clear use case.
-
-If multiple codecs are specified for an array, each codec is applied
-sequentially; when encoding, the encoded output of codec ``i`` serves as the
-decoded input of codec ``i+1``, and similarly when decoding, the decoded output
-of codec ``i+1`` serves as the encoded input to codec ``i``.  Since ``bytes ->
-array`` codecs are not supported, it follows that the list of codecs must be of
-the following form:
-
-- zero or more ``array -> array`` codecs; followed by
-- exactly one ``array -> bytes`` codec; followed by
-- zero or more ``bytes -> bytes`` codecs.
 
 Logically, a codec ``c`` must define three properties:
 
@@ -1115,45 +1109,11 @@ Logically, a codec ``c`` must define three properties:
 - ``c.decode(encoded_value, decoded_representation_type)``, a procedure that
   computes the decoded representation, and is used when reading an array.
 
-Implementations MAY support partial decoding for certain codecs
-(e.g. sharding, blosc).  Logically, partial decoding may be defined in terms
-of an additional operation:
+If more than one codec is specified for an array, each codec is applied
+sequentially; when encoding, the encoded output of codec ``i`` serves as the
+decoded input of codec ``i+1``, and similarly when decoding, the decoded
+output of codec ``i+1`` serves as the encoded input to codec ``i``.
 
-- ``c.partial_decode(input_handle, decoded_representation_type,
-  decoded_regions)``, where:
-
-  - ``input_handle`` provides an interface for requesting partial reads of
-    the encoded representation and itself supports the same
-    ``partial_decode`` interface;
-  - ``decoded_representation_type`` is the same as for ``c.decode``;
-  - ``decoded_regions`` specifies the regions of the decoded representation
-    that must be returned.
-
-  If the encoded representation is a multi-dimensional array, then
-  ``decoded_regions`` specifies a subset of the array's domain.  If the
-  encoded representation is a byte string, then ``decoded_regions``
-  specifies a list of byte ranges.
-
-- ``c.compute_encoded_size(input_size)``, a procedure that determines the 
-  size of the encoded representation given a size of the decoded representation.
-  This procedure cannot be implemented for codecs that produce variable-sized
-  encoded representations, such as compression algorithms. Depending on the 
-  type of the codec, the signature could differ:
-
-  - ``c.compute_encoded_size(array_size, data_type) -> (array_size, data_type)`` 
-    for ``array -> array`` codecs, where ``array_size`` is the number of items 
-    in the array, i.e., the product of the components of the array's shape;
-  - ``c.compute_encoded_size(array_size, data_type) -> byte_size`` 
-    for ``array -> bytes`` codecs;
-  - ``c.compute_encoded_size(byte_size) -> byte_size`` 
-    for ``bytes -> bytes`` codecs.
-
-.. note::
-
-   If ``partial_decode`` is not supported by a particular codec, it can
-   always be implemented in terms of ``decode`` by simply decoding in full
-   and then satisfying any ``decoded_regions`` requests directly from the
-   cached decoded representation.
 
 Determination of encoded representations
 ----------------------------------------
@@ -1162,7 +1122,7 @@ To encode or decode a chunk, the encoded and decoded representations for each
 codec in the chain must first be determined as follows:
 
 1. The initial decoded representation, ``decoded_representation[0]`` is a
-   multi-dimensional array with the same data type as the zarr array, and shape
+   multi-dimensional array with the same data type as the Zarr array, and shape
    equal to the chunk shape.
 
 2. For each codec ``i``, the encoded representation is equal to the decoded
@@ -1172,7 +1132,26 @@ codec in the chain must first be determined as follows:
    If ``compute_encoded_representation_type`` fails because of an incompatible
    decoded representation, an implementation should indicate an error.
 
-.. _encoding_procedure:
+.. _default-array-byte-string-conversion:
+
+Conversion between multi-dimensional array and byte string representations
+--------------------------------------------------------------------------
+
+Some codecs operate directly on multi-dimensional arrays of elements,
+e.g. encoding a 3-d array as a multi-channel jpeg image.  Other codecs operate
+at the byte level, e.g. gzip compression.  If a codec that operates at the byte
+level receives as input an array that is not a 1-dimensional uint8 array, it may
+convert the input array to a byte string by concatenating the default binary
+representations of each element in lexicographical order (C order).  Similarly,
+if a codec that expects a multi-dimensional array as input instead receives a
+byte string, it may decode each element in lexicographical order according to
+the default binary representation of each element.
+
+.. note::
+
+   To encode elements in a different order than the default lexicographical
+   order (C order/row major), the :ref:`transpose codec<transpose-codec-v1>` may
+   be specified.
 
 Encoding procedure
 ------------------
@@ -1182,28 +1161,30 @@ the following procedure:
 
 1. The initial *encoded chunk* ``EC[0]`` of the type specified by
    ``decoded_representation[0]`` is equal to the chunk array ``A`` (with a shape
-   equal to the chunk shape, and data type equal to the zarr array data type).
+   equal to the chunk shape, and data type equal to the Zarr array data type).
 
 2. For each codec ``codecs[i]`` in ``codecs``, ``EC[i+1] :=
    codecs[i].encode(EC[i])``.
 
-3. The final encoded chunk representation ``EC_final := EC[codecs.length]``.
-   This is always a byte string due to the requirement that the list of codecs
-   include an ``array -> bytes`` codec.
+3. The final encoded chunk representation ``EC_final`` is always a byte string.
+   If ``EC[codecs.length]`` is a byte string, then ``EC_final :=
+   EC[codecs.length]``.  Otherwise, ``EC_final`` is
+   :ref:`converted<default-array-byte-string-conversion>` from
+   ``EC[codecs.length]``.
 
 4. ``EC_final`` is written to the store_.
-
-.. _decoding_procedure:
 
 Decoding procedure
 ------------------
 
-Based on the computed ``decoded_representations`` list, a chunk is decoded using
+Based on the computed ``decoded_representations`` list, a chunk is encoded using
 the following procedure:
 
 1. The encoded chunk representation ``EC_final`` is read from the store_.
 
-2. ``EC[codecs.length] := EC_final``.
+2. If ``codecs[codecs.length]`` is a byte string, ``EC[codecs.length] :=
+   EC_final``.  Otherwise, ``EC[codecs.length]`` is
+   :ref:`converted<default-array-byte-string-conversion>` from ``EC_final``.
 
 3. For each codec ``codecs[i]`` in ``codecs``, iterating in reverse order,
    ``EC[i] := codecs[i].decode(EC[i+1], decoded_representation[i])``.
@@ -1223,7 +1204,7 @@ codec specification must declare the codec identifier, and describe
 (or cite documents that describe) the encoding and decoding algorithms
 and the format of the encoded data.
 
-A codec may have configuration parameters which modify the behaviour
+A codec may have configuration parameters which modify the behavior
 of the codec in some way. For example, a compression codec may have a
 compression level parameter, which is an integer that affects the
 resulting compression ratio of the data. Configuration parameters must
@@ -1240,7 +1221,7 @@ zarr-specs GitHub repository. However, codec specifications may be
 maintained by any group or organisation and published in any location
 on the Web. For further details of the process for contributing a
 codec specification to the zarr-specs GitHub repository, see
-`ZEP 0 <https://zarr.dev/zeps/active/ZEP0000.html>`_ which describes
+`ZEP 0<https://zarr.dev/zeps/active/ZEP0000.html>`_ which describes
 the process for Zarr specification changes.
 
 Further details of how codecs are configured for an array are given in the `Array metadata`_ section.
@@ -1272,9 +1253,10 @@ that an implementation of this specification could be modular and
 allow for different store implementations to be used.
 
 The store interface defines a set of operations involving `keys` and
-`values`. In the context of this interface, a `key` is a Unicode
-string, where the final character is **not** a ``/`` character.
-In general, a `value` is a sequence of bytes. Specific stores
+`values`. In the context of this interface, a `key` is any string
+containing only characters in the ranges ``a-z``, ``A-Z``, ``0-9``, or
+in the set ``/.-_``, where the final character is **not** a ``/``
+character. In general, a `value` is a sequence of bytes. Specific stores
 may choose more specific storage formats, which must be stated in the
 specification of the respective store. E.g. a database store might
 encode values of ``*.json`` keys with a database-native json type.
@@ -1314,8 +1296,8 @@ A **readable store** supports the following operations:
 
     | Parameters: `key_ranges`: ordered set of `key`, `range` pairs,
     |   a `key` may occur multiple times with different `ranges`
-    | Output: list of `values`, in the order of the `key_ranges`,
-    |   may contain null/none for missing keys
+    | Output: list of `values`, in the order of the `key_ranges`, may contain none
+    |   for missing keys
 
 A **writeable store** supports the following operations:
 
@@ -1327,9 +1309,9 @@ A **writeable store** supports the following operations:
 ``set_partial_values`` - Store `values` at a given `key`, starting at byte `range_start`.
 
     | Parameters: `key_start_values`: set of `key`,
-    |   `range_start`, `values` triples, a `key` may occur multiple
-    |   times with different `range_starts`, `range_starts` (considering
-    |   the length of the respective `values`) must not specify overlapping
+    |   `range_start`, `value` triples, a `key` may occur multiple
+    |   times with different `range_starts`, `range_starts` with
+    |   length of the respective `value` must not specify overlapping
     |   ranges for the same `key`
     | Output: none
 
@@ -1350,11 +1332,11 @@ A **writeable store** supports the following operations:
 
 .. note::
 
-   Some KV stores do allow creation and update of keys, but not deletion. For
+   Some stores allow creating and updating keys, but not deleting them. For
    example, Zip archives do not allow removal of content without recreating the
    full archive.
 
-   Inability to delete can affect ability to rename keys as well, as a rename
+   Inability to delete keys can impair the ability to rename keys, as a rename
    is often a sequence or atomic combination of a deletion and a creation.
 
 A **listable store** supports any one or more of the following
@@ -1546,7 +1528,7 @@ Let "+" be the string concatenation operator.
     To discover all nodes in a hierarchy, one should discover the children of
     the root of the hierarchy and then recursively list children of child
     groups.
-
+    
     For hierarchies without group storage transformers one may also call
     ``list_prefix("/")``. All ``zarr.json`` keys represent either explicit
     groups or arrays. All intermediate prefixes ending in a ``/`` are implicit
@@ -1577,11 +1559,10 @@ Let "+" be the string concatenation operator.
 Storage transformers
 ====================
 
-A Zarr storage transformer modifies a request to read or write data before passing
-that request to the following transformer or store.
+A Zarr storage transformer allows a store to change Zarr-compatible data before storing it.
 The stored transformed data is restored to its original state whenever data is requested
 by the Array. Storage transformers can be configured per array via the
-`storage_transformers <storage_transformers_>`_ name in the `array metadata`_. Storage transformers which do
+`storage_transformers <storage_transformers (array)_>`_ name in the `array metadata`_. Storage transformers which do
 not change the storage layout (e.g. for caching) may be specified at runtime without
 adding them to the array metadata.
 
@@ -1592,8 +1573,8 @@ adding them to the array metadata.
 A storage transformer serves the same `abstract store interface`_ as the store_.
 However, it should not persistently store any information necessary to restore the original data,
 but instead propagates this to the next storage transformer or the final store.
-From the perspective of an array or a previous stage transformer both store and storage transformer follow the same
-protocol and can be interchanged regarding the protocol. The behaviour can still be different,
+From the perspective of an array or a previous stage transformer, both store and storage transformer follow the same
+protocol and can be interchanged regarding the protocol. The behavior can still be different,
 e.g. requests may be cached or the form of the underlying data can change.
 
 Storage transformers may be stacked to combine different functionalities:
@@ -1607,6 +1588,13 @@ Storage transformers may be stacked to combine different functionalities:
       end
       t3 --> Store
 
+A fixed set of storage providers is recommended for implementation with this specification:
+
+
+Predefined storage transformers
+-------------------------------
+
+- :ref:`sharding-storage-transformer-v1` (pending, part of `ZEP 2 <https://zarr.dev/zeps/draft/ZEP0002.html>`_)
 
 .. _extensions_section:
 
@@ -1623,10 +1611,11 @@ array       data type               `data_type`_
 array       chunk grid              `chunk_grid`_
 array       chunk key encoding      `chunk_key_encoding`_
 array       codecs                  `codecs`_
-array       storage transformer     `storage_transformers`_
+array       storage transformer     `storage_transformers (array)`_
 =========== ======================= ================================================
 
-If such extension points are used by groups or arrays, they are required.
+If such extension points are used by groups or arrays, they are required, except
+for data types specifying fallback data types.
 
 See https://github.com/zarr-developers/zarr-specs/issues/49 for a list of
 potential extensions.
@@ -1652,20 +1641,20 @@ that need to be carefully considered but do not strictly fall into the spec.
 Explicit vs implicit group
 --------------------------
 
-While this zarr spec v3 defines implicit and explicit groups, implementations may
-decide to create an explicit group for all implicit groups they encounter; in
+This specification defines both implicit and explicit groups, but implementations may
+create an explicit group for all implicit groups they encounter; in
 particular when using a hierarchical storage.
 
 Erasure of an implicit group may automatically erase any empty parent. For
 example on a S3 store where the namespace is flat, erasure of the last key with
-a prefix will erase all the implicit group in the prefix.
+a prefix will erase all implicit groups in the prefix.
 
 Care must thus be taken when erasing an array or a group if the parent needs to
 be converted into an explicit group.
 
-A race-condition arises if a client writes an array at path ``P``,
-and another concurrently assumes ``P`` is an implicit group and writes subgroups or arrays into it.
-Implementations may choose to never use implicit groups to avoid this.
+A race condition arises if a client writes an array at path ``P``,
+and another client concurrently assumes ``P`` is an implicit group and writes subgroups or arrays into it.
+Implementations can avoid this race condition by exclusively using explicit groups.
 
 Resizing
 --------
@@ -1674,8 +1663,8 @@ In general, arrays can be resized for writable (and, if necessary, deletable)
 stores. In the most basic case, two scenarios can be considered: shrinking along
 an array dimension, or increasing its size.
 
-When shrinking, implementations can consider whether to delete chunks if the
-store allows this, or keep them. This should either be configurable, or be
+When shrinking, implementations can consider to delete chunks if the store
+allows this, or keep them. This should either be configurable, or be
 communicated to the user appropriately.
 
 When increasing an array along a dimension, chunks may or may not have existed
@@ -1729,18 +1718,6 @@ Change log
 All notable and possibly implementation-affecting changes to this specification
 are documented in this section, grouped by the specification status and ordered
 by time.
-
-Changes after Provisional Acceptance
-------------------------------------
-
-- Fallback data type support was removed.  `PR #248
-  <https://github.com/zarr-developers/zarr-specs/pull/248/>`_
-- It is now required to specify an ``array -> bytes`` codec in the ``codecs``
-  array metadata field.  `PR #249
-  <https://github.com/zarr-developers/zarr-specs/pull/249>`_
-- The representation of fill values for floating point numbers was changed to
-  avoid ambiguity.  `PR #236
-  <https://github.com/zarr-developers/zarr-specs/pull/236>`_
 
 Draft Changes
 --------------------------
