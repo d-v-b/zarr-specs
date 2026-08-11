@@ -22,6 +22,15 @@ footer {
     display: none;
 }
 
+/* Un-hide the Read the Docs version warning notification.
+   The notification gives itself class="raised toast", and pydata-sphinx-theme
+   bundles all of Bootstrap, whose `.toast:not(.show)` rule then hides it.
+   Read the Docs never adds `.show`, so the banner never appears.
+   See https://github.com/readthedocs/addons/issues/413 */
+readthedocs-notification.toast:not(.show) {
+    display: block;
+}
+
 div.bd-article-container:has(.draft) {
     background-image: url(../draft-watermark.png) !important;
     background-repeat: repeat-y !important;
