@@ -28,7 +28,7 @@ JSON schema
     the data type. Each schema defines ``identifier`` and ``element`` under
     ``$defs``, and validates an object whose ``data_type`` and ``fill_value``
     members conform to them. Constraints that depend on values outside the
-    schema, such as the length of an ``r*`` element, are stated in the
+    schema, such as the length of a ``raw_bits`` element, are stated in the
     schema's ``description`` strings and are not machine-checked. The schema
     documents are informative; where a schema and the prose disagree, the
     prose is normative.
@@ -547,8 +547,8 @@ JSON schema
 
 .. _dtype-raw:
 
-r*
-^^
+raw_bits
+^^^^^^^^
 
 Meaning
 """""""
@@ -560,26 +560,83 @@ exactly and MUST NOT reinterpret them, e.g. by applying a byte order.
 Values
 """"""
 
-All byte sequences of length ``N / 8``, where ``N`` is the number of bits
+All byte sequences of length ``length_bits / 8``, where ``length_bits`` is
 given by the identifier.
 
 Identifier
 """"""""""
 
-The JSON string ``"r<N>"``, where ``<N>`` is the decimal representation of the
-size of each element in bits, which MUST be a positive integer divisible by 8.
-For example, ``"r8"``, ``"r16"``, and ``"r24"`` identify elements of 1, 2, and
-3 bytes respectively.
+A JSON object of the form::
+
+    {
+        "name": "raw_bits",
+        "configuration": {
+            "length_bits": <int>
+        }
+    }
+
+The ``configuration`` object is required and has the following members:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Name
+     - Type
+     - Required
+     - Constraints
+   * - ``length_bits``
+     - JSON number (integer)
+     - Yes
+     - A positive integer divisible by 8, giving the size of each element in
+       bits.
+
+The ``configuration`` object is closed: it MUST NOT contain any members other
+than those listed above.
+
+For example, an element of 3 bytes is identified by::
+
+    {"name": "raw_bits", "configuration": {"length_bits": 24}}
+
+Legacy string identifier
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Earlier revisions of this specification identified this data type by the JSON
+string ``"r<N>"``, where ``<N>`` is the decimal representation of
+``length_bits``, e.g. ``"r24"``. This string is a legacy synonym for the
+object form: ``"r24"`` is equivalent to
+``{"name": "raw_bits", "configuration": {"length_bits": 24}}``.
+
+Implementations MUST accept the legacy string form when reading array
+metadata. Implementations SHOULD NOT write the legacy string form; the object
+form is RECOMMENDED when writing.
+
+.. note::
+
+   The legacy string form is not a :ref:`short-hand name
+   <extension-definition-short-hand-name>` in the sense of the extension
+   definition, because it embeds the configuration in the string. It is a
+   special case that exists only for this data type and for backwards
+   compatibility. No other data type, core or extension, may define a string
+   identifier that carries configuration.
 
 Element encoding
 """"""""""""""""
 
-A JSON array of integers with length equal to ``N / 8``, where each integer is
-in the range ``[0, 255]`` and gives the value of the corresponding byte of the
-element, in order.
+Either:
+
+- A JSON array of integers with length equal to ``length_bits / 8``, where
+  each integer is in the range ``[0, 255]`` and gives the value of the
+  corresponding byte of the element, in order.
+
+- A JSON string produced by applying base64 encoding (as specified in
+  :rfc:`4648`, section 4, with padding) to the ``length_bits / 8`` bytes of
+  the element.
+
+For example, for ``length_bits`` equal to 24, the array ``[0, 1, 255]`` and
+the string ``"AAH/"`` denote the same element.
 
 JSON schema
 """"""""""""
 
-.. literalinclude:: schemas/raw.json
+.. literalinclude:: schemas/raw_bits.json
    :language: json
