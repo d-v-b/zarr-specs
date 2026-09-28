@@ -9,6 +9,11 @@ https://github.com/zarr-developers/zarr-python/tree/main/docs/spec.
 
 The rendered docs of the `main` branch are available at https://zarr-specs.readthedocs.io
 
+Read the Docs also builds a preview of every pull request. The preview for pull
+request `N` is served at `https://zarr-specs--N.org.readthedocs.build/en/N/`;
+the `docs/readthedocs.org:zarr-specs` status check links to it, and a workflow
+posts the link as a comment when the pull request is opened.
+
 ## Usage
 
 The following steps install the necessary packages to render the specs with
