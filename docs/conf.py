@@ -4,6 +4,8 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+
 # -- Path setup --------------------------------------------------------------
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -70,6 +72,22 @@ html_theme_options = {
   "show_prev_next": False,
   "secondary_sidebar_items": ["page-toc"],
 }
+
+# Warn readers that they are looking at unreleased specs. Read the Docs builds
+# `latest` and `main` from branches, while releases (`stable`, `v3.1.0`, ...)
+# are built from tags, so keying on the version type needs no updating when the
+# default version moves. Pull request builds are `external` and are left to Read
+# the Docs' own pull request notification.
+#
+# A local (non-URL) announcement is rendered straight into the HTML by
+# pydata-sphinx-theme and gets no dismiss button, so the banner is permanent.
+if os.environ.get("READTHEDOCS_VERSION_TYPE") == "branch":
+  html_theme_options["announcement"] = (
+    "This is the <strong>latest development version</strong> of the Zarr "
+    "specifications. Some features may not yet appear in a published release. "
+    "<a href=\"https://zarr-specs.readthedocs.io/en/stable/\">"
+    "Read the stable version</a>."
+  )
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
